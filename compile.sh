@@ -23,7 +23,7 @@ fi
 filename=$(basename "$1" .cpp)
 
 # Compile the C++ code with pthread library and -O3 optimization flag
-g++ -pthread -O3 "$1" -o "$filename"
+g++ -std=c++20 -pthread -O3 "$1" -o "$filename"
 
 # Check if compilation was successful
 if [ $? -eq 0 ]; then
