@@ -119,10 +119,10 @@ void writeEncodedData(const string& encodedData, const string& outputFile, const
         return;
     }
 
-    file << huffmanCodes.size() << endl;
-    for (const auto& pair : huffmanCodes) {
-        file << pair.first << " " << pair.second << endl;
-    }
+    // file << huffmanCodes.size() << endl;
+    // for (const auto& pair : huffmanCodes) {
+    //     file << pair.first << " " << pair.second << endl;
+    // }
 
     file << encodedData;
 
@@ -159,7 +159,7 @@ unordered_map<char, int> buildFreqMap(string inputFile)
 }
 
 
-bool compressFile(string inputFilePath, string outputFilePath="./output/compressed.bin")
+bool compressFile(string inputFilePath, string outputFilePath="outputs/compressed.bin")
 {
     try
     {
