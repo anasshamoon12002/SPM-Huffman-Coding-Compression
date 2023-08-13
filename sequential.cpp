@@ -189,14 +189,14 @@ int main(int argc, char* argv[])
 
     try
     {
-        cout << "1" << endl;
+        // cout << "1" << endl;
         if (argc != 2)
         {
             cout << "Expecting the file path as the command line argument." << endl;
             return -1;
         }
 
-        cout << "2" << endl;
+        // cout << "2" << endl;
 
         string inputFilePath = argv[1];
         // string outputFilepath = argv[2];
