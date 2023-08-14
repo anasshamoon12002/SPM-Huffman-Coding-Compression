@@ -112,7 +112,8 @@ string encodeFile(const string& inputFile, const unordered_map<char, string>& hu
 
 // Write encoded data to output file
 void writeEncodedData(const string& encodedData, const string& outputFile, const unordered_map<char, string>& huffmanCodes) {
-    ofstream file(outputFile);
+    ofstream file;
+    file.open(outputFile, ios::binary | ios::out);
 
     if (!file.is_open()) {
         cerr << "Error opening output file" << endl;
@@ -124,7 +125,9 @@ void writeEncodedData(const string& encodedData, const string& outputFile, const
     //     file << pair.first << " " << pair.second << endl;
     // }
 
-    file << encodedData;
+    file.write(encodedData.data(), encodedData.size());
+
+    // file << encodedData;
 
     file.close();
 }
