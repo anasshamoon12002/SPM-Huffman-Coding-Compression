@@ -110,26 +110,59 @@ string encodeFile(const string& inputFile, const unordered_map<char, string>& hu
     return encodedData;
 }
 
-// Write encoded data to output file
-void writeEncodedData(const string& encodedData, const string& outputFile, const unordered_map<char, string>& huffmanCodes) {
-    ofstream file;
-    file.open(outputFile, ios::binary | ios::out);
 
-    if (!file.is_open()) {
-        cerr << "Error opening output file" << endl;
+void writeBinaryStringToFile(const std::string& binaryString, const std::string& outputFile) {
+    std::ofstream outFile(outputFile, std::ios::binary);
+
+    if (!outFile.is_open()) {
+        std::cerr << "Error opening output file" << std::endl;
         return;
     }
+
+    std::bitset<8> byte;
+    size_t bitCount = 0;
+
+    for (size_t i = 0; i < binaryString.length(); i++) {
+        byte[7 - (bitCount % 8)] = (binaryString[i] == '1');
+        bitCount++;
+
+        if (bitCount % 8 == 0 || i == binaryString.length() - 1) {
+            char byteChar = static_cast<char>(byte.to_ulong());
+            outFile.write(&byteChar, 1);
+            byte.reset();
+        }
+    }
+
+    outFile.close();
+}
+
+
+// Write encoded data to output file
+void writeEncodedData(const string& encodedData, const string& outputFile, const unordered_map<char, string>& huffmanCodes) {
+    // ofstream file;
+    // file.open(outputFile, ios::binary | ios::out);
+
+    // if (!file.is_open()) {
+    //     cerr << "Error opening output file" << endl;
+    //     return;
+    // }
 
     // file << huffmanCodes.size() << endl;
     // for (const auto& pair : huffmanCodes) {
     //     file << pair.first << " " << pair.second << endl;
     // }
 
-    file.write(encodedData.data(), encodedData.size());
+    // file.write(encodedData.data(), encodedData.size());
 
     // file << encodedData;
 
-    file.close();
+    // file.close();
+
+    // writeEncodedStringToFile(encodedData, outputFile);
+
+    writeBinaryStringToFile(encodedData, outputFile);
+
+
 }
 
 unordered_map<char, int> buildFreqMap(string inputFile)
