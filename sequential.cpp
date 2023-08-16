@@ -3,6 +3,7 @@
 #include <queue>
 #include <unordered_map>
 #include <vector>
+#include "utimer.cpp"
 
 using namespace std;
 
@@ -35,6 +36,23 @@ using namespace std;
 //     }
 
 // }
+
+// Function to get the file size
+
+streampos getFileSize(string filename)
+{
+    ifstream file(filename, std::ios::binary | std::ios::ate);
+
+    if (file.is_open()) {
+        std::streampos filesize = file.tellg();
+        // std::cout << "File size: " << filesize << " bytes" << std::endl;
+        file.close();
+        return filesize;
+    } else {
+        // std::cout << "File not found." << std::endl;
+        return -1;
+    }
+}
 
 // Node for Huffman tree
 struct Node {
@@ -195,20 +213,51 @@ unordered_map<char, int> buildFreqMap(string inputFile)
 }
 
 
-bool compressFile(string inputFilePath, string outputFilePath="outputs/compressed.bin")
+bool compressFile(string inputFilePath, string outputFilePath)
 {
     try
     {
-        unordered_map<char, int> freqMap = buildFreqMap(inputFilePath);
-        Node* root = buildHuffmanTree(freqMap);
+        unordered_map<char, int> freqMap;
+
+        {
+            utimer tFreqMap("Frequency Map");
+
+            freqMap = buildFreqMap(inputFilePath);
+        }
+
+        Node* root;
+
+        {
+            utimer tHuffmanTree("Huffman Tree");
+
+            root = buildHuffmanTree(freqMap);
+        }
 
         unordered_map<char, string> huffmanCodes;
 
-        buildHuffmanCodes(root, "", huffmanCodes);
+        {
+            utimer tHuffmanCodes("Huffman Codes");
 
-        string encodedData = encodeFile(inputFilePath, huffmanCodes);
+            buildHuffmanCodes(root, "", huffmanCodes);
+        }
 
-        writeEncodedData(encodedData, outputFilePath, huffmanCodes);
+        
+
+        string encodedData;
+
+        {
+            utimer tEncodedContent("Encoded Content");
+
+            encodedData = encodeFile(inputFilePath, huffmanCodes);
+
+            // cout << endl << encodedData << endl << endl;
+        }
+
+        {
+            utimer tWriteCompressed("Writing to file");
+
+            writeEncodedData(encodedData, outputFilePath, huffmanCodes);
+        }
 
         return true;
     }
@@ -223,25 +272,44 @@ bool compressFile(string inputFilePath, string outputFilePath="outputs/compresse
 int main(int argc, char* argv[])
 {
 
+    utimer t_full("Full Program");
+
     try
     {
         // cout << "1" << endl;
-        if (argc != 2)
+        if (argc < 2)
         {
             cout << "Expecting the file path as the command line argument." << endl;
             return -1;
         }
 
-        // cout << "2" << endl;
-
         string inputFilePath = argv[1];
-        // string outputFilepath = argv[2];
+        string outputFilepath = "outputs/compressed.bin";
+
+        if (argc == 3)
+        {
+            outputFilepath = argv[2];
+        }
+
+        streampos inputFilesize = getFileSize(inputFilePath);
+
+        cout << "File size of the uncompressed file is " << inputFilesize << " bytes." << endl;
 
         // string content = readFile(inputFilePath);
         
         // unordered_map freqMap = buildFreqMap(inputFilePath);
 
-        bool compressed = compressFile(inputFilePath);
+        utimer tCompressedFile("Actual Functionality");
+
+        bool compressed = compressFile(inputFilePath, outputFilepath);
+
+        streampos outputFilesize = getFileSize(outputFilepath);
+
+        cout << "File size of the compressed file is " << outputFilesize << " bytes." << endl;
+
+        float compressedPercentage = (1.0 - ((float) outputFilesize / (float)inputFilesize)) * 100;
+
+        cout << "File compressed by " << compressedPercentage << "%" << endl;
 
 
     }

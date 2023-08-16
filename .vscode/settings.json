@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        ".env*": "dotenv",
+        "string": "cpp",
+        "iosfwd": "cpp",
+        "filesystem": "cpp"
+    }
+}
