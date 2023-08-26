@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <vector>
 #include <thread>
-// #include <mutex>
 #include "utimer.cpp"
 
 using namespace std;
@@ -231,8 +230,6 @@ int main(int argc, char* argv[]) {
                 threads[i].detach();
             }
 
-            string encodedData = "";
-
             bool allThreadsFinished = false;
 
             // Wait for all detached threads to complete
@@ -248,17 +245,19 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // for (int i = 0; i < numThreads; i++)
-        // {
-        //     encodedData += encodedChunks[i];
-        // }
+        string encodedData = "";
+
+        for (int i = 0; i < numThreads; i++)
+        {
+            encodedData += encodedChunks[i];
+        }
 
         for (const auto& pair : encodedChunks)
         {
             cout << pair.first << endl;
         }
 
-        // writeBinaryStringToFile(encodedData, outputFilepath);
+        writeBinaryStringToFile(encodedData, outputFilepath);
 
         return 0;
     }
