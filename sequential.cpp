@@ -3,6 +3,7 @@
 #include <queue>
 #include <unordered_map>
 #include <vector>
+#include <bitset>
 #include "utimer.cpp"
 
 using namespace std;

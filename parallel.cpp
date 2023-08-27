@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include <thread>
+#include <bitset>
 #include "utimer.cpp"
 
 using namespace std;
