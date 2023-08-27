@@ -5,6 +5,7 @@
 #include <vector>
 #include <thread>
 #include <bitset>
+#include <condition_variable>
 #include "utimer.cpp"
 
 using namespace std;
@@ -167,7 +168,7 @@ void compressChunk(const string& inputFile, size_t start, size_t end, unordered_
 
     inFile.close();
 
-    cout << "Thread " << threadNum << endl;
+    // cout << "Thread " << threadNum << endl;
 
     string encodedData = encodeContent(fileContent, huffmanCodes);
 
