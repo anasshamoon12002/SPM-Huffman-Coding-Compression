@@ -7,6 +7,7 @@
 #include <bitset>
 #include <condition_variable>
 #include "utimer.cpp"
+#include <unistd.h>
 
 using namespace std;
 
@@ -85,6 +86,8 @@ void buildHuffmanCodes(Node* root, string code, unordered_map<char, string>& huf
 void writeBinaryStringToFile(const std::string& binaryString, const std::string& outputFile) {
     std::ofstream outFile(outputFile, std::ios::binary);
 
+    // std::cout << "Output file path: " << outputFile << std::endl;
+
     if (!outFile.is_open()) {
         std::cerr << "Error opening output file" << std::endl;
         return;
@@ -152,27 +155,49 @@ string encodeContent(const string data, const unordered_map<char, string>& huffm
 
 void compressChunk(const string& inputFile, size_t start, size_t end, unordered_map<char, string>& huffmanCodes, int threadNum, unordered_map<int, string>& encodedChunks) {
 
-    ifstream inFile(inputFile);
-
-    // Move file pointers to the start and end of the chunk
-    inFile.seekg(start);
-
-    string fileContent = "";
-    char ch;
-
-    for (int i = start; i < end; i++)
+    try
     {
-        inFile.get(ch);
-        fileContent += ch;
+        ifstream inFile(inputFile);
+
+        cout << "Input File: " << inputFile << endl;
+
+        if (!inFile.is_open()) {
+            std::cerr << "Error opening input file in threads." << std::endl;
+            perror("open failure");
+            return;
+        }
+
+        // Move file pointers to the start and end of the chunk
+        inFile.seekg(start);
+
+        string fileContent = "";
+        char ch;
+
+        for (int i = start; i < end; i++)
+        {
+            inFile.get(ch);
+            fileContent += ch;
+        }
+
+        inFile.close();
+
+        // cout << fileContent << endl;
+
+        cout << "Thread " << threadNum << endl;
+
+        string encodedData = encodeContent(fileContent, huffmanCodes);
+
+        // cout << encodedData << endl;
+
+        encodedChunks[threadNum] = encodedData;
+
+        // inFile.close();
     }
-
-    inFile.close();
-
-    // cout << "Thread " << threadNum << endl;
-
-    string encodedData = encodeContent(fileContent, huffmanCodes);
-
-    encodedChunks[threadNum] = encodedData;
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
 }
 
 int main(int argc, char* argv[]) {
@@ -185,6 +210,11 @@ int main(int argc, char* argv[]) {
             cout << "Expecting the file path as the command line argument." << endl;
             return -1;
         }
+
+
+        // char* name = get_current_dir_name();
+
+        // cout << name << endl;
 
         string inputFilePath = argv[1];
         string outputFilepath = "outputs/compressed.bin";
@@ -202,11 +232,27 @@ int main(int argc, char* argv[]) {
 
         unordered_map<char, int> freqMap = buildFreqMap(inputFilePath);
 
+        // for (auto const& pair: freqMap)
+        // {
+        //     cout << "{" << pair.first << ": " << pair.second << "}\n";
+        // }
+
+        // cout << "After Build Freq Map" << endl;
+
         Node* root = buildHuffmanTree(freqMap);
+
+        // cout << "After build huffman tree" << endl;
 
         unordered_map<char, string> huffmanCodes;
 
         buildHuffmanCodes(root, "", huffmanCodes);
+        
+        // for (auto const& pair: huffmanCodes)
+        // {
+        //     cout << "{" << pair.first << ": " << pair.second << "}\n";
+        // }
+
+        // cout << "After build huffman codes" << endl;
 
         unordered_map<int, string> encodedChunks;
 
@@ -229,35 +275,42 @@ int main(int argc, char* argv[]) {
                 size_t start = i * chunkSize;
                 size_t end = (i == numThreads - 1) ? (unsigned long) inputFilesize : (start + chunkSize);
                 threads[i] = thread(compressChunk, ref(inputFilePath), start, end, ref(huffmanCodes), i, ref(encodedChunks));
-                threads[i].detach();
+                // threads[i].detach();
             }
 
-            bool allThreadsFinished = false;
-
-            // Wait for all detached threads to complete
-            while (!allThreadsFinished) {
-                bool allFinished = true;
-                for (const auto& pair : encodedChunks) {
-                    if (pair.second.empty()) {
-                        allFinished = false;
-                        break;
-                    }
-                }
-                allThreadsFinished = allFinished;
+            for (int i = 0; i < numThreads; i++)
+            {
+                threads[i].join();
             }
+
+            // bool allThreadsFinished = false;
+
+            // // Wait for all detached threads to complete
+            // while (!allThreadsFinished) {
+            //     bool allFinished = true;
+            //     for (const auto& pair : encodedChunks) {
+            //         if (pair.second.empty()) {
+            //             allFinished = false;
+            //             break;
+            //         }
+            //     }
+            //     allThreadsFinished = allFinished;
+            // }
         }
 
         string encodedData = "";
+
+        // cout << "Encoded Data: " << encodedData << endl;
 
         for (int i = 0; i < numThreads; i++)
         {
             encodedData += encodedChunks[i];
         }
 
-        for (const auto& pair : encodedChunks)
-        {
-            cout << pair.first << endl;
-        }
+        // for (const auto& pair : encodedChunks)
+        // {
+        //     cout << pair.first << endl;
+        // }
 
         writeBinaryStringToFile(encodedData, outputFilepath);
 
