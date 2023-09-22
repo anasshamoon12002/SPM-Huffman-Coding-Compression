@@ -1,0 +1,6 @@
+## Compiling and Running Code
+- All the source files, .sh files and the directories (inputs, outputs, fastflow) need to be present in the same root folder.
+- Fastflow library needs to be downloaded in fastflow directory (git cloning would actually make the fastflow directory itself so no need to create it by your ownself).
+- sequential.cpp, parallel.cpp and fastflow-parallel.cpp are the sourcefiles for the sequential, cpp native threads and fastflow implementation respectively.
+- compile.sh can be used to compile the source code for sequential.cpp and parallel.cpp by `./compile.sh <source-file.cpp>`. It will make the executable file that could be then run. For the sequential code, the method is to run by `./sequential <input-file-path> <output-file-path>` and for parallel (native threads implementation), the method is to run by `./parallel <input-file-path> <output-file-path> <num-threads>`. Paths are assumed to be relative to the source files.
+-compile-fastflow.sh is used to compile the fastflow-parallel.cpp file by `./compile-fastflow.sh fastflow-parallel.cpp`. The executable file be generated and can be executed by running the command `./fastflow-parallel <input-file-path> <output-file-path> <num-threads>`.

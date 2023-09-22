@@ -5,10 +5,65 @@
 #include <vector>
 #include <thread>
 #include <bitset>
+#include <condition_variable>
 #include "utimer.cpp"
 #include <unistd.h>
+#include <ff/ff.hpp>
+#include <ff/farm.hpp>
+#include <ff/parallel_for.hpp>
 
 using namespace std;
+using namespace ff;
+
+string encodeContent(const string data, const unordered_map<char, string>& huffmanCodes);
+
+class CompressTask : public ff_node {
+private:
+    string inputFile;
+    size_t start, end;
+    const unordered_map<char, string>& huffmanCodes;
+    int threadNum;
+    unordered_map<int, string>& encodedChunks;
+
+public:
+    CompressTask(const string& inputFile, size_t start, size_t end, const unordered_map<char, string>& huffmanCodes,
+                 int threadNum, unordered_map<int, string>& encodedChunks)
+        : inputFile(inputFile), start(start), end(end), huffmanCodes(huffmanCodes),
+          threadNum(threadNum), encodedChunks(encodedChunks) {}
+
+    void* svc(void* taskData) {
+        // utimer svc("Worker Node Computation " + to_string(threadNum));
+        ifstream inFile(inputFile);
+
+        // cout << "Input File: " << inputFile << endl;
+
+        if (!inFile.is_open()) {
+            cerr << "Error opening input file in threads." << endl;
+            perror("open failure");
+            return nullptr;
+        }
+
+        inFile.seekg(start);
+
+        string fileContent = "";
+        char ch;
+
+        for (int i = start; i < end; i++) {
+            inFile.get(ch);
+            fileContent += ch;
+        }
+
+        inFile.close();
+
+        // cout << "Thread " << threadNum << endl;
+
+        string encodedData = encodeContent(fileContent, huffmanCodes);
+
+        encodedChunks[threadNum] = encodedData;
+
+        return GO_ON;
+    }
+};
 
 // Function to get the file size
 
@@ -113,6 +168,11 @@ void writeBinaryStringToFile(const string& binaryString, const string& outputFil
 unordered_map<char, int> buildFreqMap(string inputFile)
 {
     ifstream file;
+
+    // char* name = get_current_dir_name();
+
+    // cout << name << endl;
+
     file.open(inputFile);
 
     unordered_map<char, int> freqMap;
@@ -180,9 +240,12 @@ void compressChunk(const string& inputFile, size_t start, size_t end, unordered_
 
         inFile.close();
 
+        cout << "Thread " << threadNum << endl;
+
         string encodedData = encodeContent(fileContent, huffmanCodes);
 
         encodedChunks[threadNum] = encodedData;
+
     }
     catch(const exception& e)
     {
@@ -202,14 +265,9 @@ int main(int argc, char* argv[]) {
             return -1;
         }
 
-
-        // char* name = get_current_dir_name();
-
-        // cout << name << endl;
-
         string inputFilePath = argv[1];
         string outputFilepath = "outputs/compressed.bin";
-
+        // Define the number of threads you want to use for different stages
         int numThreads;
 
         if (argc > 2) {
@@ -247,45 +305,38 @@ int main(int argc, char* argv[]) {
 
         unordered_map<int, string> encodedChunks;
 
-        auto start_thread_creation = chrono::high_resolution_clock::now();
-    
-        // Create and join a single dummy thread
-        thread dummy_thread([]() {});
-        dummy_thread.join();
+        for (int i = 0; i < numThreads; i++)
+        {
+            encodedChunks[i] = "";
+        }
 
-        // Measure the time taken for thread joining overhead
-        auto end_thread_creation = chrono::high_resolution_clock::now();
-        chrono::duration<double> thread_creation_time = end_thread_creation - start_thread_creation;
+        size_t chunkSize = inputFilesize / numThreads;
 
-        // Print the thread creation overhead time
-        cout << "Thread Creation Overhead Time: " << thread_creation_time.count() * 1000000 << " usec" << endl;
+        // cout << "After chunksize" << endl;
+
+
+        vector<ff_node*> workers;
 
         {
-
-            for (int i = 0; i < numThreads; i++)
-            {
-                encodedChunks[i] = "";
-            }
-
-            size_t chunkSize = inputFilesize / numThreads;
-
-            vector<thread> threads(numThreads);
-
-            utimer tCompressedFile("Parallel Compression");
-
+            utimer tWorkerNodeCreation("Worker Node Creation");
             for (int i = 0; i < numThreads; ++i) {
-                size_t start = i * chunkSize;
-                size_t end = (i == numThreads - 1) ? (unsigned long) inputFilesize : (start + chunkSize);
-                threads[i] = thread(compressChunk, ref(inputFilePath), start, end, ref(huffmanCodes), i, ref(encodedChunks));
-                // threads[i].detach();
-            }
-
-            for (int i = 0; i < numThreads; i++)
-            {
-                threads[i].join();
+                workers.push_back(new CompressTask(inputFilePath, i * chunkSize,
+                                                (i == numThreads - 1) ? (unsigned long) inputFilesize : (i + 1) * chunkSize,
+                                                huffmanCodes, i, encodedChunks));
+                // cout << "Worker: " << i << endl;
             }
         }
-        
+
+        ff_farm farm(workers);
+
+        {
+            utimer tCompressedFile("Parallel Compression");
+            if (farm.run_and_wait_end() < 0) {
+                cerr << "Farm execution error." << endl;
+                return -1;
+            }
+        }
+
         string encodedData = "";
 
         for (int i = 0; i < numThreads; i++)

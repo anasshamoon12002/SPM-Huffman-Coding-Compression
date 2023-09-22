@@ -42,15 +42,15 @@ using namespace std;
 
 streampos getFileSize(string filename)
 {
-    ifstream file(filename, std::ios::binary | std::ios::ate);
+    ifstream file(filename, ios::binary | ios::ate);
 
     if (file.is_open()) {
-        std::streampos filesize = file.tellg();
-        // std::cout << "File size: " << filesize << " bytes" << std::endl;
+        streampos filesize = file.tellg();
+        // cout << "File size: " << filesize << " bytes" << endl;
         file.close();
         return filesize;
     } else {
-        // std::cout << "File not found." << std::endl;
+        // cout << "File not found." << endl;
         return -1;
     }
 }
@@ -130,15 +130,15 @@ string encodeFile(const string& inputFile, const unordered_map<char, string>& hu
 }
 
 
-void writeBinaryStringToFile(const std::string& binaryString, const std::string& outputFile) {
-    std::ofstream outFile(outputFile, std::ios::binary);
+void writeBinaryStringToFile(const string& binaryString, const string& outputFile) {
+    ofstream outFile(outputFile, ios::binary);
 
     if (!outFile.is_open()) {
-        std::cerr << "Error opening output file" << std::endl;
+        cerr << "Error opening output file" << endl;
         return;
     }
 
-    std::bitset<8> byte;
+    bitset<8> byte;
     size_t bitCount = 0;
 
     for (size_t i = 0; i < binaryString.length(); i++) {
@@ -242,8 +242,6 @@ bool compressFile(string inputFilePath, string outputFilePath)
             buildHuffmanCodes(root, "", huffmanCodes);
         }
 
-        
-
         string encodedData;
 
         {
@@ -262,9 +260,9 @@ bool compressFile(string inputFilePath, string outputFilePath)
 
         return true;
     }
-    catch(const std::exception& e)
+    catch(const exception& e)
     {
-        std::cerr << e.what() << '\n';
+        cerr << e.what() << '\n';
         return false;
     }
     
@@ -311,7 +309,6 @@ int main(int argc, char* argv[])
         float compressedPercentage = (1.0 - ((float) outputFilesize / (float)inputFilesize)) * 100;
 
         cout << "File compressed by " << compressedPercentage << "%" << endl;
-
 
     }
     catch(const char* exception)
